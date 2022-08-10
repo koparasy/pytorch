@@ -313,7 +313,7 @@ inline ScalarType get_dtype_from_self(
 
 TORCH_IMPL_FUNC(amax_out_mps)
    (const Tensor& input_t,
-    IntArrayRef dim,
+    at::OptionalIntArrayRef dim,
     bool keepdim,
     const Tensor& output_t) {
 
@@ -322,7 +322,7 @@ TORCH_IMPL_FUNC(amax_out_mps)
 
 TORCH_IMPL_FUNC(amin_out_mps)
    (const Tensor& input_t,
-    IntArrayRef dim,
+    at::OptionalIntArrayRef dim,
     bool keepdim,
     const Tensor& output_t) {
 
