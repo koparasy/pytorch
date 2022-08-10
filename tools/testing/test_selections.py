@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from tools.stats.import_test_stats import get_disabled_tests, get_slow_tests
 
@@ -10,9 +10,14 @@ def calculate_shards(
     num_shards: int,
     tests: List[str],
     job_times: Dict[str, float],
-    special_files: Optional[List[str]] = None,
+    is_special_file: Optional[Callable[[str], bool]] = None,
 ) -> List[Tuple[float, List[str]]]:
-    special_files = special_files if special_files is not None else []
+    def default_special_files(x: str) -> bool:
+        return True
+
+    is_special_file = (
+        is_special_file if is_special_file is not None else default_special_files
+    )
 
     filtered_job_times: Dict[str, float] = dict()
     unknown_jobs: List[str] = []
@@ -29,7 +34,7 @@ def calculate_shards(
     )
     sharded_jobs: List[Tuple[float, List[str]]] = [(0.0, []) for _ in range(num_shards)]
 
-    special = [x for x in sorted_jobs if x in special_files]
+    special = [x for x in sorted_jobs if is_special_file(x)]
     not_special = [x for x in sorted_jobs if x not in special]
 
     for i in range(0, len(special)):

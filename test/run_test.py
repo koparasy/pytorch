@@ -48,9 +48,16 @@ except ImportError:
         "Unable to import test_selections from tools/testing. Running without test selection stats..."
     )
 
-special_files = ['test_nn', 'test_fake_tensor', 'test_cpp_api_parity', 'test_jit_cuda_fuser', 'test_reductions',
-                 'test_cuda', 'test_indexing', 'test_fx_backends', 'test_linalg', 'test_cpp_extensions_jit',
-                 'test_torch', 'test_ops']
+
+def is_special_file(file: str) -> bool:
+    build_environment = os.getenv("BUILD_ENVIRONMENT", "linux cuda")
+    if "linux" in build_environment and "cuda" in build_environment:
+        return True
+    else:
+        return file in ['test_nn', 'test_fake_tensor', 'test_cpp_api_parity', 'test_jit_cuda_fuser', 'test_reductions',
+                        'test_cuda', 'test_indexing', 'test_fx_backends', 'test_linalg', 'test_cpp_extensions_jit',
+                        'test_torch', 'test_tensor_creation_ops']
+
 
 def discover_tests(
         base_dir: Optional[pathlib.Path] = None,
@@ -331,6 +338,7 @@ def discover_functorch_tests():
     # Sanity check
     assert len(result) >= 8
     return result
+
 
 FUNCTORCH_TESTS = discover_functorch_tests()
 
@@ -883,11 +891,12 @@ def get_selected_tests(options):
             print(
                 "::warning:: Gathered no stats from artifacts. Proceeding with default sharding plan."
             )
-            selected_tests = selected_tests[which_shard - 1 :: num_shards]
+            selected_tests = selected_tests[which_shard - 1:: num_shards]
         else:
             print("Found test time stats from artifacts")
             test_file_times_config = test_file_times[test_config]
-            shards = calculate_shards(num_shards, selected_tests, test_file_times_config, special_files=special_files)
+            shards = calculate_shards(num_shards, selected_tests, test_file_times_config,
+                                      is_special_file=is_special_file)
             _, tests_from_shard = shards[which_shard - 1]
             selected_tests = tests_from_shard
 
@@ -902,6 +911,7 @@ def get_selected_tests(options):
                                        "PyTorch is built without LAPACK support.")
 
     return selected_tests
+
 
 def run_test_module(test: str, test_directory: str, options) -> Optional[str]:
     test_module = parse_test_module(test)
@@ -949,7 +959,7 @@ def main():
     failure_messages = []
 
     def can_parallel(x: str) -> bool:
-        if x in CUSTOM_HANDLERS or x in special_files:
+        if x in CUSTOM_HANDLERS or is_special_file(x):
             return False
         if "distributed" in x:
             return False
