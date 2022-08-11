@@ -37,6 +37,15 @@ def calculate_shards(
     special = [x for x in sorted_jobs if is_special_file(x)]
     not_special = [x for x in sorted_jobs if x not in special]
 
+    for i in range(0, len(not_special), 3):
+        min_shard_index = sorted(range(num_shards), key=lambda j: sharded_jobs[j][0])[0]
+        curr_shard_time, curr_shard_jobs = sharded_jobs[min_shard_index]
+        curr_shard_jobs.extend(not_special[i: i + 3])
+        sharded_jobs[min_shard_index] = (
+            curr_shard_time + filtered_job_times[not_special[i]],
+            curr_shard_jobs,
+        )
+
     for i in range(0, len(special)):
         min_shard_index = sorted(range(num_shards), key=lambda j: sharded_jobs[j][0])[0]
         curr_shard_time, curr_shard_jobs = sharded_jobs[min_shard_index]
@@ -45,16 +54,6 @@ def calculate_shards(
             curr_shard_time + filtered_job_times[special[i]],
             curr_shard_jobs,
         )
-
-    for i in range(0, len(not_special), 3):
-        min_shard_index = sorted(range(num_shards), key=lambda j: sharded_jobs[j][0])[0]
-        curr_shard_time, curr_shard_jobs = sharded_jobs[min_shard_index]
-        curr_shard_jobs.extend(not_special[i : i + 3])
-        sharded_jobs[min_shard_index] = (
-            curr_shard_time + filtered_job_times[not_special[i]],
-            curr_shard_jobs,
-        )
-
     # Round robin the unknown jobs starting with the smallest shard
     index = sorted(range(num_shards), key=lambda i: sharded_jobs[i][0])[0]
     for job in unknown_jobs:
@@ -90,7 +89,7 @@ def get_reordered_tests(tests: List[str]) -> List[str]:
         prioritized_tests = [
             f for f in changed_files if f.startswith(prefix) and f.endswith(".py")
         ]
-        prioritized_tests = [f[len(prefix) :] for f in prioritized_tests]
+        prioritized_tests = [f[len(prefix):] for f in prioritized_tests]
         prioritized_tests = [f[: -len(".py")] for f in prioritized_tests]
         print("Prioritized test from test file changes.")
 
